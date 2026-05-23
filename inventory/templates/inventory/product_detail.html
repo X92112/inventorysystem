@@ -1,0 +1,150 @@
+{% extends "inventory/base.html" %}
+{% block title %}{{ product.name }}{% endblock %}
+{% block page_title %}Product detail{% endblock %}
+
+{% block topbar_actions %}
+  <a href="{% url 'inventory:product_edit' product.pk %}" class="btn btn-primary">
+    <i class="ti ti-edit"></i> Edit
+  </a>
+  <a href="{% url 'inventory:product_list' %}" class="btn">
+    <i class="ti ti-arrow-left"></i> Back
+  </a>
+{% endblock %}
+
+{% block content %}
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:18px">
+
+  <!-- Product info -->
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <div class="card-title">{{ product.name }}</div>
+        <div class="card-subtitle mono">{{ product.sku }}</div>
+      </div>
+      {% if product.stock == 0 %}
+        <span class="badge badge-danger">Out of stock</span>
+      {% elif product.stock <= product.min_stock %}
+        <span class="badge badge-warning">Low stock</span>
+      {% else %}
+        <span class="badge badge-success">In stock</span>
+      {% endif %}
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:14px">
+      {% if product.description %}
+      <p style="font-size:13px;color:var(--text-2)">{{ product.description }}</p>
+      {% endif %}
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div>
+          <div class="form-label">Category</div>
+          <span class="badge badge-info">{{ product.category.name }}</span>
+        </div>
+        <div>
+          <div class="form-label">Supplier</div>
+          <span style="font-size:13px">{{ product.supplier.name|default:"—" }}</span>
+        </div>
+        <div>
+          <div class="form-label">Unit price</div>
+          <span class="mono" style="font-size:15px;font-weight:600">${{ product.price }}</span>
+        </div>
+        <div>
+          <div class="form-label">Stock value</div>
+          <span class="mono" style="font-size:15px;font-weight:600">${{ product.stock_value|floatformat:2 }}</span>
+        </div>
+        <div>
+          <div class="form-label">In stock</div>
+          <span class="mono" style="font-size:18px;font-weight:600">{{ product.stock }}</span>
+        </div>
+        <div>
+          <div class="form-label">Min stock level</div>
+          <span class="mono text-muted">{{ product.min_stock }}</span>
+        </div>
+      </div>
+
+      {% if product.min_stock > 0 %}
+      <div>
+        <div class="form-label" style="margin-bottom:6px">Stock level</div>
+        <div class="progress" style="height:10px">
+          {% if product.stock == 0 %}
+            <div class="progress-bar" style="width:0%;background:var(--red)"></div>
+          {% elif product.stock >= product.min_stock %}
+            <div class="progress-bar" style="width:100%;background:var(--green)"></div>
+          {% else %}
+            <div class="progress-bar"
+                 style="background:var(--amber)"
+                 data-stock="{{ product.stock }}"
+                 data-min="{{ product.min_stock }}"></div>
+          {% endif %}
+        </div>
+      </div>
+      {% endif %}
+
+      <div style="display:flex;gap:10px;padding-top:10px;border-top:1px solid var(--border)">
+        <a href="{% url 'inventory:movement_create' %}" class="btn btn-sm btn-primary">
+          <i class="ti ti-arrows-transfer-up"></i> Record movement
+        </a>
+        <a href="{% url 'inventory:product_delete' product.pk %}" class="btn btn-sm"
+           style="color:var(--red)"
+           onclick="return confirm('Delete {{ product.name }}? This cannot be undone.')">
+          <i class="ti ti-trash"></i> Delete
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent movements -->
+  <div class="card" style="padding:0">
+    <div style="padding:16px 20px;border-bottom:1px solid var(--border)">
+      <div class="card-title">Recent movements</div>
+      <div class="card-subtitle">Last 20 stock changes</div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Type</th>
+            <th>Qty</th>
+            <th>Note</th>
+            <th>Date</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for m in movements %}
+          <tr>
+            <td>
+              {% if m.movement_type == 'IN' %}
+                <span class="badge badge-success">In</span>
+              {% elif m.movement_type == 'OUT' %}
+                <span class="badge badge-warning">Out</span>
+              {% else %}
+                <span class="badge badge-info">Adjust</span>
+              {% endif %}
+            </td>
+            <td class="mono">
+              {% if m.movement_type == 'IN' %}+{% elif m.movement_type == 'OUT' %}-{% endif %}{{ m.quantity }}
+            </td>
+            <td class="text-muted text-sm">{{ m.note|default:"—" }}</td>
+            <td class="text-muted text-sm">{{ m.created_at|date:"M d, H:i" }}</td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="4" style="text-align:center;padding:30px;color:var(--text-3)">No movements yet.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+{% block extra_js %}
+<script>
+  document.querySelectorAll('.progress-bar[data-stock]').forEach(function(bar) {
+    var pct = Math.min(100, Math.round(parseFloat(bar.dataset.stock) / parseFloat(bar.dataset.min) * 100));
+    bar.style.width = pct + '%';
+  });
+</script>
+{% endblock %}
+{% endblock %}

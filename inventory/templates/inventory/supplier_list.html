@@ -1,0 +1,62 @@
+{% extends "inventory/base.html" %}
+{% block title %}Suppliers{% endblock %}
+{% block page_title %}Suppliers{% endblock %}
+
+{% block topbar_actions %}
+  <a href="{% url 'inventory:supplier_create' %}" class="btn btn-primary">
+    <i class="ti ti-plus"></i> Add supplier
+  </a>
+{% endblock %}
+
+{% block content %}
+
+<div class="card" style="padding:0">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Name</th>
+          <th>Contact person</th>
+          <th>Email</th>
+          <th>Phone</th>
+          <th>Products</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for supplier in suppliers %}
+        <tr>
+          <td class="mono text-muted text-sm">{{ forloop.counter }}</td>
+          <td style="font-weight:500">{{ supplier.name }}</td>
+          <td class="text-muted">{{ supplier.contact_person|default:"—" }}</td>
+          <td class="text-muted">{{ supplier.email|default:"—" }}</td>
+          <td class="text-muted">{{ supplier.phone|default:"—" }}</td>
+          <td>
+            <span class="badge badge-info">{{ supplier.products.count }} product{{ supplier.products.count|pluralize }}</span>
+          </td>
+          <td>
+            <form method="post" action="{% url 'inventory:supplier_delete' supplier.pk %}" style="display:inline"
+                  onsubmit="return confirm('Delete supplier {{ supplier.name }}? This cannot be undone.')">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-sm" style="color:var(--red)">
+                <i class="ti ti-trash"></i> Delete
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="7" style="text-align:center;padding:40px;color:var(--text-3)">
+            <i class="ti ti-building-store" style="font-size:32px;display:block;margin-bottom:8px"></i>
+            No suppliers yet.
+            <a href="{% url 'inventory:supplier_create' %}">Add one now</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}

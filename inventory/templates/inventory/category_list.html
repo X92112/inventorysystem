@@ -1,0 +1,48 @@
+{% extends "inventory/base.html" %}
+{% block title %}Categories{% endblock %}
+{% block page_title %}Categories{% endblock %}
+
+{% block topbar_actions %}
+  <a href="{% url 'inventory:category_create' %}" class="btn btn-primary">
+    <i class="ti ti-plus"></i> Add category
+  </a>
+{% endblock %}
+
+{% block content %}
+
+<div class="card" style="padding:0">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Name</th>
+          <th>Description</th>
+          <th>Products</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for category in categories %}
+        <tr>
+          <td class="mono text-muted text-sm">{{ forloop.counter }}</td>
+          <td style="font-weight:500">{{ category.name }}</td>
+          <td class="text-muted">{{ category.description|default:"—" }}</td>
+          <td>
+            <span class="badge badge-info">{{ category.products.count }} product{{ category.products.count|pluralize }}</span>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="4" style="text-align:center;padding:40px;color:var(--text-3)">
+            <i class="ti ti-tag" style="font-size:32px;display:block;margin-bottom:8px"></i>
+            No categories yet.
+            <a href="{% url 'inventory:category_create' %}">Add one now</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}

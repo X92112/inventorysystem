@@ -1,0 +1,90 @@
+{% extends "inventory/base.html" %}
+{% block title %}Orders{% endblock %}
+{% block page_title %}Purchase orders{% endblock %}
+
+{% block topbar_actions %}
+  <a href="{% url 'inventory:order_create' %}" class="btn btn-primary">
+    <i class="ti ti-plus"></i> New order
+  </a>
+{% endblock %}
+
+{% block content %}
+
+<!-- Filter row -->
+<form method="get" class="search-row mb-4">
+  <select name="status" class="form-control" style="max-width:160px">
+    <option value="">All statuses</option>
+    <option value="PENDING"   {% if request.GET.status == 'PENDING'   %}selected{% endif %}>Pending</option>
+    <option value="SHIPPED"   {% if request.GET.status == 'SHIPPED'   %}selected{% endif %}>Shipped</option>
+    <option value="RECEIVED"  {% if request.GET.status == 'RECEIVED'  %}selected{% endif %}>Received</option>
+    <option value="CANCELLED" {% if request.GET.status == 'CANCELLED' %}selected{% endif %}>Cancelled</option>
+  </select>
+  <button type="submit" class="btn"><i class="ti ti-filter"></i> Filter</button>
+  {% if request.GET.status %}
+    <a href="{% url 'inventory:order_list' %}" class="btn"><i class="ti ti-x"></i> Clear</a>
+  {% endif %}
+</form>
+
+<div class="card" style="padding:0">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Order #</th>
+          <th>Supplier</th>
+          <th>Items</th>
+          <th>Total</th>
+          <th>Date</th>
+          <th>Status</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for order in orders %}
+        <tr>
+          <td class="mono text-sm">#PO-{{ order.pk|stringformat:"04d" }}</td>
+          <td style="font-weight:500">{{ order.supplier.name }}</td>
+          <td class="text-muted text-sm">{{ order.items.count }} item{{ order.items.count|pluralize }}</td>
+          <td class="mono">${{ order.total|floatformat:2 }}</td>
+          <td class="text-muted text-sm">{{ order.created_at|date:"M d, Y" }}</td>
+          <td>
+            {% if order.status == 'PENDING' %}
+              <span class="badge badge-warning">Pending</span>
+            {% elif order.status == 'SHIPPED' %}
+              <span class="badge badge-info">Shipped</span>
+            {% elif order.status == 'RECEIVED' %}
+              <span class="badge badge-success">Received</span>
+            {% elif order.status == 'CANCELLED' %}
+              <span class="badge badge-danger">Cancelled</span>
+            {% endif %}
+          </td>
+          <td>
+            <a href="{% url 'inventory:order_detail' order.pk %}" class="btn btn-sm">
+              <i class="ti ti-eye"></i> View
+            </a>
+            {% with pk_str=order.pk|stringformat:"04d" %}
+            <form method="post" action="{% url 'inventory:order_delete' order.pk %}" style="display:inline"
+                  onsubmit="return confirm('Delete PO-{{ pk_str }}? This cannot be undone.')">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-sm" style="color:var(--red)">
+                <i class="ti ti-trash"></i> Delete
+              </button>
+            </form>
+            {% endwith %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="7" style="text-align:center;padding:40px;color:var(--text-3)">
+            <i class="ti ti-truck" style="font-size:32px;display:block;margin-bottom:8px"></i>
+            No orders yet.
+            <a href="{% url 'inventory:order_create' %}">Create one</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}

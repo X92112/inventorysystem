@@ -1,0 +1,105 @@
+{% extends "inventory/base.html" %}
+{% block title %}PO-{{ order.pk|stringformat:"04d" }}{% endblock %}
+{% block page_title %}Purchase order detail{% endblock %}
+
+{% block topbar_actions %}
+  <a href="{% url 'inventory:order_list' %}" class="btn">
+    <i class="ti ti-arrow-left"></i> Back
+  </a>
+{% endblock %}
+
+{% block content %}
+
+<div style="display:grid;grid-template-columns:2fr 1fr;gap:18px">
+
+  <!-- Line items -->
+  <div class="card" style="padding:0">
+    <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+      <div>
+        <div class="card-title">PO-{{ order.pk|stringformat:"04d" }}</div>
+        <div class="card-subtitle">{{ order.supplier.name }} · {{ order.created_at|date:"M d, Y" }}</div>
+      </div>
+      {% if order.status == 'PENDING' %}
+        <span class="badge badge-warning">Pending</span>
+      {% elif order.status == 'SHIPPED' %}
+        <span class="badge badge-info">Shipped</span>
+      {% elif order.status == 'RECEIVED' %}
+        <span class="badge badge-success">Received</span>
+      {% else %}
+        <span class="badge">{{ order.status }}</span>
+      {% endif %}
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Product</th>
+            <th>Qty</th>
+            <th>Unit price</th>
+            <th>Line total</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in order.items.all %}
+          <tr>
+            <td>{{ item.product.name }} <span class="mono text-muted text-sm">({{ item.product.sku }})</span></td>
+            <td class="mono">{{ item.quantity }}</td>
+            <td class="mono">${{ item.unit_price }}</td>
+            <td class="mono">${{ item.line_total }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="4" style="text-align:center;padding:20px;color:var(--text-3)">No items.</td></tr>
+          {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="3" style="text-align:right;font-weight:600;padding:12px 14px">Total</td>
+            <td class="mono" style="font-weight:600">${{ order.total }}</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+    {% if order.notes %}
+    <div style="padding:14px 20px;border-top:1px solid var(--border);font-size:13px;color:var(--text-2)">
+      <strong>Notes:</strong> {{ order.notes }}
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Status update -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">Update status</div>
+    </div>
+    <form method="post" action="{% url 'inventory:order_update_status' order.pk %}">
+      {% csrf_token %}
+      <div class="form-group" style="margin-bottom:14px">
+        <label class="form-label">New status</label>
+        <select name="status" class="form-control">
+          {% for val, label in order.STATUS_CHOICES %}
+          <option value="{{ val }}" {% if order.status == val %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <button type="submit" class="btn btn-primary" style="width:100%">
+        <i class="ti ti-check"></i> Update
+      </button>
+    </form>
+    <div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--border);font-size:12px;color:var(--text-3)">
+      Setting status to <strong>Received</strong> will automatically add stock for all line items.
+    </div>
+    <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
+      {% with pk_str=order.pk|stringformat:"04d" %}
+      <form method="post" action="{% url 'inventory:order_delete' order.pk %}"
+            onsubmit="return confirm('Delete PO-{{ pk_str }}? This cannot be undone.')">
+        {% csrf_token %}
+        <button type="submit" class="btn" style="width:100%;color:var(--red)">
+          <i class="ti ti-trash"></i> Delete this order
+        </button>
+      </form>
+      {% endwith %}
+    </div>
+  </div>
+
+</div>
+{% endblock %}

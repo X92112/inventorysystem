@@ -1,0 +1,65 @@
+{% extends "inventory/base.html" %}
+{% block title %}Record Movement{% endblock %}
+{% block page_title %}Record stock movement{% endblock %}
+
+{% block topbar_actions %}
+  <a href="{% url 'inventory:stock_list' %}" class="btn">
+    <i class="ti ti-arrow-left"></i> Back
+  </a>
+{% endblock %}
+
+{% block content %}
+<div style="max-width:520px">
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <div class="card-title">New stock movement</div>
+        <div class="card-subtitle">Record an IN, OUT, or adjustment</div>
+      </div>
+    </div>
+
+    <form method="post">
+      {% csrf_token %}
+      <div style="display:flex;flex-direction:column;gap:16px">
+
+        <div class="form-group">
+          <label class="form-label">Product *</label>
+          <select name="product" class="form-control" required>
+            <option value="">-- Select product --</option>
+            {% for p in products %}
+            <option value="{{ p.pk }}">{{ p.name }} ({{ p.sku }}) — stock: {{ p.stock }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Movement type *</label>
+          <select name="movement_type" class="form-control" required>
+            <option value="">-- Select type --</option>
+            <option value="IN">Stock In (add stock)</option>
+            <option value="OUT">Stock Out (remove stock)</option>
+            <option value="ADJUST">Adjustment (set absolute quantity)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Quantity *</label>
+          <input type="number" name="quantity" min="1" class="form-control" placeholder="e.g. 50" required/>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Note</label>
+          <input type="text" name="note" class="form-control" placeholder="Optional reason or reference…"/>
+        </div>
+
+        <div style="display:flex;gap:10px;padding-top:10px;border-top:1px solid var(--border)">
+          <button type="submit" class="btn btn-primary">
+            <i class="ti ti-check"></i> Record movement
+          </button>
+          <a href="{% url 'inventory:stock_list' %}" class="btn">Cancel</a>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

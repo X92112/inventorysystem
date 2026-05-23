@@ -1,0 +1,106 @@
+{% extends "inventory/base.html" %}
+{% block title %}Movements{% endblock %}
+{% block page_title %}Stock movements{% endblock %}
+
+{% block topbar_actions %}
+  <a href="{% url 'inventory:movement_create' %}" class="btn btn-primary">
+    <i class="ti ti-plus"></i> Add movement
+  </a>
+{% endblock %}
+
+{% block content %}
+
+<!-- Filter row -->
+<form method="get" class="search-row mb-4">
+  <div class="search-wrap" style="flex:1">
+    <i class="ti ti-search"></i>
+    <input type="text" name="q" value="{{ request.GET.q }}" placeholder="Search by product name…" class="form-control"/>
+  </div>
+  <select name="type" class="form-control" style="max-width:160px">
+    <option value="">All types</option>
+    <option value="IN"     {% if request.GET.type == 'IN'     %}selected{% endif %}>Stock In</option>
+    <option value="OUT"    {% if request.GET.type == 'OUT'    %}selected{% endif %}>Stock Out</option>
+    <option value="ADJUST" {% if request.GET.type == 'ADJUST' %}selected{% endif %}>Adjustment</option>
+  </select>
+  <button type="submit" class="btn"><i class="ti ti-filter"></i> Filter</button>
+  {% if request.GET.q or request.GET.type %}
+    <a href="{% url 'inventory:movement_list' %}" class="btn"><i class="ti ti-x"></i> Clear</a>
+  {% endif %}
+</form>
+
+<div class="card" style="padding:0">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Product</th>
+          <th>Type</th>
+          <th>Quantity</th>
+          <th>Reference</th>
+          <th>Note</th>
+          <th>Date</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for movement in movements %}
+        <tr>
+          <td style="font-weight:500">{{ movement.product.name }}</td>
+          <td>
+            {% if movement.movement_type == 'IN' %}
+              <span class="badge badge-success">In</span>
+            {% elif movement.movement_type == 'OUT' %}
+              <span class="badge badge-warning">Out</span>
+            {% else %}
+              <span class="badge badge-info">Adjust</span>
+            {% endif %}
+          </td>
+          <td class="mono">
+            {% if movement.movement_type == 'IN' %}
+              <span style="color:var(--green)">+{{ movement.quantity }}</span>
+            {% elif movement.movement_type == 'OUT' %}
+              <span style="color:var(--red)">-{{ movement.quantity }}</span>
+            {% else %}
+              <span>{{ movement.quantity }}</span>
+            {% endif %}
+          </td>
+          <td class="mono text-muted text-sm">{{ movement.reference|default:"—" }}</td>
+          <td class="text-muted">{{ movement.notes|default:"—" }}</td>
+          <td class="text-muted text-sm">{{ movement.created_at|date:"M d, Y H:i" }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6" style="text-align:center;padding:40px;color:var(--text-3)">
+            <i class="ti ti-arrows-transfer-up" style="font-size:32px;display:block;margin-bottom:8px"></i>
+            No movements yet.
+            <a href="{% url 'inventory:movement_create' %}">Add one now</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Pagination -->
+{% if movements.has_other_pages %}
+<div style="display:flex;justify-content:center;gap:6px;margin-top:20px">
+  {% if movements.has_previous %}
+    <a href="?page={{ movements.previous_page_number }}&q={{ request.GET.q }}&type={{ request.GET.type }}" class="btn btn-sm">
+      <i class="ti ti-chevron-left"></i>
+    </a>
+  {% endif %}
+  {% for num in movements.paginator.page_range %}
+    <a href="?page={{ num }}&q={{ request.GET.q }}&type={{ request.GET.type }}"
+       class="btn btn-sm {% if movements.number == num %}btn-primary{% endif %}">
+      {{ num }}
+    </a>
+  {% endfor %}
+  {% if movements.has_next %}
+    <a href="?page={{ movements.next_page_number }}&q={{ request.GET.q }}&type={{ request.GET.type }}" class="btn btn-sm">
+      <i class="ti ti-chevron-right"></i>
+    </a>
+  {% endif %}
+</div>
+{% endif %}
+
+{% endblock %}

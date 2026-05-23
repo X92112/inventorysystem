@@ -1,0 +1,94 @@
+{% extends "inventory/base.html" %}
+{% block title %}{% if product %}Edit{% else %}Add{% endif %} Product{% endblock %}
+{% block page_title %}{% if product %}Edit product{% else %}Add product{% endif %}{% endblock %}
+
+{% block topbar_actions %}
+  <a href="{% url 'inventory:product_list' %}" class="btn">
+    <i class="ti ti-arrow-left"></i> Back
+  </a>
+{% endblock %}
+
+{% block content %}
+<div style="max-width:680px">
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <div class="card-title">{% if product %}Edit: {{ product.name }}{% else %}New product{% endif %}</div>
+        <div class="card-subtitle">Fill in the product details below</div>
+      </div>
+    </div>
+
+    <form method="post">
+      {% csrf_token %}
+
+      <div style="display:flex;flex-direction:column;gap:16px">
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label class="form-label">Product name *</label>
+            <input type="text" name="name" value="{{ form.name.value|default:'' }}" class="form-control" placeholder="e.g. RTX 4060 GPU" required/>
+            {% if form.name.errors %}<span style="color:var(--red);font-size:12px">{{ form.name.errors.0 }}</span>{% endif %}
+          </div>
+          <div class="form-group">
+            <label class="form-label">SKU *</label>
+            <input type="text" name="sku" value="{{ form.sku.value|default:'' }}" class="form-control" placeholder="e.g. GPU-001" required/>
+            {% if form.sku.errors %}<span style="color:var(--red);font-size:12px">{{ form.sku.errors.0 }}</span>{% endif %}
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Description</label>
+          <textarea name="description" rows="3" class="form-control" placeholder="Optional product description…">{{ form.description.value|default:'' }}</textarea>
+        </div>
+
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label class="form-label">Category *</label>
+            <select name="category" class="form-control" required>
+              <option value="">-- Select category --</option>
+              {% for cat in categories %}
+              <option value="{{ cat.pk }}" {% if form.category.value|stringformat:"s" == cat.pk|stringformat:"s" %}selected{% endif %}>
+                {{ cat.name }}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Supplier</label>
+            <select name="supplier" class="form-control">
+              <option value="">-- No supplier --</option>
+              {% for sup in suppliers %}
+              <option value="{{ sup.pk }}" {% if form.supplier.value|stringformat:"s" == sup.pk|stringformat:"s" %}selected{% endif %}>
+                {{ sup.name }}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+        <div class="form-grid-3">
+          <div class="form-group">
+            <label class="form-label">Price ($) *</label>
+            <input type="number" name="price" step="0.01" min="0" value="{{ form.price.value|default:'' }}" class="form-control" placeholder="0.00" required/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Initial stock</label>
+            <input type="number" name="stock" min="0" value="{{ form.stock.value|default:'0' }}" class="form-control" placeholder="0"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Min stock level</label>
+            <input type="number" name="min_stock" min="0" value="{{ form.min_stock.value|default:'10' }}" class="form-control" placeholder="10"/>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:10px;margin-top:24px;padding-top:20px;border-top:1px solid var(--border)">
+        <button type="submit" class="btn btn-primary">
+          <i class="ti ti-check"></i>
+          {% if product %}Save changes{% else %}Add product{% endif %}
+        </button>
+        <a href="{% url 'inventory:product_list' %}" class="btn">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

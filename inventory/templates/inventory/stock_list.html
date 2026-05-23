@@ -1,0 +1,113 @@
+{% extends "inventory/base.html" %}
+{% block title %}Stock Levels{% endblock %}
+{% block page_title %}Stock levels{% endblock %}
+
+{% block topbar_actions %}
+  <a href="{% url 'inventory:movement_create' %}" class="btn btn-primary">
+    <i class="ti ti-plus"></i> Add movement
+  </a>
+{% endblock %}
+
+{% block content %}
+
+{% if out_of_stock %}
+<div class="alert alert-danger">
+  <i class="ti ti-alert-circle"></i>
+  <span><strong>{{ out_of_stock }} product{{ out_of_stock|pluralize }}</strong> out of stock — place orders immediately.</span>
+</div>
+{% endif %}
+
+{% if low_stock %}
+<div class="alert alert-warning">
+  <i class="ti ti-alert-triangle"></i>
+  <span><strong>{{ low_stock }} product{{ low_stock|pluralize }}</strong> below minimum stock level.</span>
+</div>
+{% endif %}
+
+<div class="card" style="padding:0">
+  <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+    <div class="card-title">Inventory levels</div>
+    <span class="text-muted text-sm">Reorder point shown per product</span>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Product</th>
+          <th>Category</th>
+          <th>In stock</th>
+          <th>Min level</th>
+          <th>On order</th>
+          <th>Stock bar</th>
+          <th>Status</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in stock_items %}
+        <tr>
+          <td style="font-weight:500">{{ item.name }}</td>
+          <td><span class="badge badge-info">{{ item.category.name }}</span></td>
+          <td class="mono">{{ item.stock }}</td>
+          <td class="mono text-muted">{{ item.min_stock }}</td>
+          <td class="mono text-muted">{{ item.on_order|default:"—" }}</td>
+          <td style="width:120px">
+            {% if item.min_stock > 0 %}
+            <div class="progress">
+              {% if item.stock == 0 %}
+                <div class="progress-bar" style="width:0%;background:var(--red)"></div>
+              {% elif item.stock >= item.min_stock %}
+                <div class="progress-bar" style="width:100%;background:var(--green)"></div>
+              {% else %}
+               <div class="progress-bar"
+     style="width:1%;background:var(--amber)"
+     data-stock="{{ item.stock }}"
+     data-min="{{ item.min_stock }}">
+</div>
+              {% endif %}
+            </div>
+            {% endif %}
+          </td>
+          <td>
+            {% if item.stock == 0 %}
+              <span class="badge badge-danger">Out of stock</span>
+            {% elif item.stock <= item.min_stock %}
+              <span class="badge badge-warning">Low stock</span>
+            {% else %}
+              <span class="badge badge-success">OK</span>
+            {% endif %}
+          </td>
+          <td>
+            <a href="{% url 'inventory:product_detail' item.pk %}" class="btn-icon" title="View product">
+              <i class="ti ti-eye"></i>
+            </a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="8" style="text-align:center;padding:40px;color:var(--text-3)">
+            <i class="ti ti-chart-bar" style="font-size:32px;display:block;margin-bottom:8px"></i>
+            No stock data yet.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% block extra_js %}
+<script>
+  // Compute accurate progress bar widths via JS since Django templates can't do division
+  document.querySelectorAll('.progress-bar[data-stock]').forEach(function(bar) {
+    var stock = parseFloat(bar.dataset.stock);
+    var min   = parseFloat(bar.dataset.min);
+    if (min > 0) {
+      var pct = Math.min(100, Math.round(stock / min * 100));
+      bar.style.width = pct + '%';
+    }
+  });
+</script>
+{% endblock %}
+
+{% endblock %}

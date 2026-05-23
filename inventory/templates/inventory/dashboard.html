@@ -1,0 +1,171 @@
+{% extends "inventory/base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block topbar_actions %}
+  <a href="{% url 'inventory:product_create' %}" class="btn btn-primary">
+    <i class="ti ti-plus"></i> Add product
+  </a>
+{% endblock %}
+
+{% block content %}
+
+{% if low_stock_count %}
+<div class="alert alert-warning">
+  <i class="ti ti-alert-triangle"></i>
+  <span><strong>{{ low_stock_count }} product{{ low_stock_count|pluralize }}</strong> below minimum stock level — reorder soon.</span>
+</div>
+{% endif %}
+
+<!-- Metric cards -->
+<div class="metrics-grid">
+  <div class="metric-card">
+    <div class="metric-label"><i class="ti ti-box"></i> Total products</div>
+    <div class="metric-value">{{ total_products }}</div>
+    <div class="metric-change up">Active in inventory</div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-label"><i class="ti ti-alert-triangle"></i> Low stock</div>
+    <div class="metric-value">{{ low_stock_count }}</div>
+    <div class="metric-change warn">{% if low_stock_count %}Needs reorder{% else %}All good{% endif %}</div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-label"><i class="ti ti-truck"></i> Pending orders</div>
+    <div class="metric-value">{{ pending_orders }}</div>
+    <div class="metric-change">Awaiting delivery</div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-label"><i class="ti ti-currency-dollar"></i> Stock value</div>
+    <div class="metric-value">${{ stock_value|floatformat:0 }}</div>
+    <div class="metric-change up">Total inventory value</div>
+  </div>
+</div>
+
+<!-- Two-column layout -->
+<div class="grid-2">
+
+  <!-- Recent activity -->
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <div class="card-title">Recent activity</div>
+        <div class="card-subtitle">Latest stock movements</div>
+      </div>
+      <a href="{% url 'inventory:movement_list' %}" class="btn btn-sm">View all</a>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Product</th>
+            <th>Type</th>
+            <th>Qty</th>
+            <th>Date</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for m in recent_movements %}
+          <tr>
+            <td>{{ m.product.name }}</td>
+            <td>
+              {% if m.movement_type == 'IN' %}
+                <span class="badge badge-success">In</span>
+              {% elif m.movement_type == 'OUT' %}
+                <span class="badge badge-warning">Out</span>
+              {% else %}
+                <span class="badge badge-info">Adjust</span>
+              {% endif %}
+            </td>
+            <td class="mono">
+              {% if m.movement_type == 'IN' %}+{% elif m.movement_type == 'OUT' %}-{% endif %}{{ m.quantity }}
+            </td>
+            <td class="text-muted text-sm">{{ m.created_at|date:"M d, H:i" }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="4" class="text-muted" style="text-align:center;padding:20px">No movements yet</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Stock by category -->
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <div class="card-title">Stock by category</div>
+        <div class="card-subtitle">Unit distribution</div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:16px">
+      {% for cat in stock_by_category %}
+      <div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+          <span style="font-size:13px;font-weight:500">{{ cat.name }}</span>
+          <span style="font-size:13px;color:var(--text-2)">{{ cat.total_stock }} units</span>
+        </div>
+        <div class="progress">
+          <div class="progress-bar cat-bar" style="width:{{ cat.percentage }}%" data-color="{{ cat.color }}"></div>
+        </div>
+      </div>
+      {% empty %}
+      <p class="text-muted text-sm">No categories yet.</p>
+      {% endfor %}
+    </div>
+  </div>
+
+</div><!-- end grid-2 -->
+
+<!-- Low stock table -->
+{% if low_stock_products %}
+<div class="card" style="margin-top:18px">
+  <div class="card-header">
+    <div>
+      <div class="card-title">Products needing reorder</div>
+      <div class="card-subtitle">Below minimum stock level</div>
+    </div>
+    <a href="{% url 'inventory:order_create' %}" class="btn btn-sm btn-primary">
+      <i class="ti ti-plus"></i> Create order
+    </a>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Product</th><th>SKU</th><th>In stock</th><th>Min level</th><th>Action</th></tr>
+      </thead>
+      <tbody>
+        {% for p in low_stock_products %}
+        <tr>
+          <td>{{ p.name }}</td>
+          <td class="mono text-muted">{{ p.sku }}</td>
+          <td>
+            <span class="badge {% if p.stock == 0 %}badge-danger{% else %}badge-warning{% endif %}">
+              {{ p.stock }}
+            </span>
+          </td>
+          <td class="text-muted">{{ p.min_stock }}</td>
+          <td>
+            <a href="{% url 'inventory:product_detail' p.pk %}" class="btn btn-sm">
+              <i class="ti ti-eye"></i> View
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endif %}
+
+{% block extra_js %}
+<script>
+  document.querySelectorAll('.cat-bar[data-color]').forEach(function(bar) {
+    bar.style.background = bar.dataset.color;
+  });
+  document.querySelectorAll('.progress-bar[data-stock]').forEach(function(bar) {
+    var pct = Math.min(100, Math.round(parseFloat(bar.dataset.stock) / parseFloat(bar.dataset.min) * 100));
+    bar.style.width = pct + '%';
+  });
+</script>
+{% endblock %}
+
+{% endblock %}

@@ -1,0 +1,126 @@
+{% extends "inventory/base.html" %}
+{% block title %}Products{% endblock %}
+{% block page_title %}Products{% endblock %}
+
+{% block topbar_actions %}
+  <a href="{% url 'inventory:product_create' %}" class="btn btn-primary">
+    <i class="ti ti-plus"></i> Add product
+  </a>
+{% endblock %}
+
+{% block content %}
+
+<!-- Search & filter -->
+<form method="get" class="search-row mb-4">
+  <div class="search-wrap" style="flex:1">
+    <i class="ti ti-search"></i>
+    <input type="text" name="q" value="{{ request.GET.q }}" placeholder="Search by name or SKU…" class="form-control"/>
+  </div>
+  <select name="category" class="form-control" style="max-width:160px">
+    <option value="">All categories</option>
+    {% for cat in categories %}
+    <option value="{{ cat.pk }}" {% if request.GET.category == cat.pk|stringformat:"s" %}selected{% endif %}>
+      {{ cat.name }}
+    </option>
+    {% endfor %}
+  </select>
+  <select name="stock" class="form-control" style="max-width:140px">
+    <option value="">All stock</option>
+    <option value="ok"  {% if request.GET.stock == 'ok'  %}selected{% endif %}>In stock</option>
+    <option value="low" {% if request.GET.stock == 'low' %}selected{% endif %}>Low stock</option>
+    <option value="out" {% if request.GET.stock == 'out' %}selected{% endif %}>Out of stock</option>
+  </select>
+  <button type="submit" class="btn"><i class="ti ti-filter"></i> Filter</button>
+  {% if request.GET.q or request.GET.category or request.GET.stock %}
+    <a href="{% url 'inventory:product_list' %}" class="btn"><i class="ti ti-x"></i> Clear</a>
+  {% endif %}
+</form>
+
+<div class="card" style="padding:0">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>SKU</th>
+          <th>Product</th>
+          <th>Category</th>
+          <th>In stock</th>
+          <th>Min stock</th>
+          <th>Price</th>
+          <th>Status</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for product in products %}
+        <tr>
+          <td class="mono text-muted text-sm">{{ product.sku }}</td>
+          <td style="font-weight:500">{{ product.name }}</td>
+          <td>
+            <span class="badge badge-info">{{ product.category.name }}</span>
+          </td>
+          <td>{{ product.stock }}</td>
+          <td class="text-muted">{{ product.min_stock }}</td>
+          <td class="mono">${{ product.price }}</td>
+          <td>
+            {% if product.stock == 0 %}
+              <span class="badge badge-danger">Out of stock</span>
+            {% elif product.stock <= product.min_stock %}
+              <span class="badge badge-warning">Low stock</span>
+            {% else %}
+              <span class="badge badge-success">In stock</span>
+            {% endif %}
+          </td>
+          <td>
+            <div style="display:flex;gap:6px">
+              <a href="{% url 'inventory:product_detail' product.pk %}" class="btn-icon" title="View">
+                <i class="ti ti-eye"></i>
+              </a>
+              <a href="{% url 'inventory:product_edit' product.pk %}" class="btn-icon" title="Edit">
+                <i class="ti ti-edit"></i>
+              </a>
+              <a href="{% url 'inventory:product_delete' product.pk %}" class="btn-icon" title="Delete"
+                 style="color:var(--red)"
+                 onclick="return confirm('Delete {{ product.name }}?')">
+                <i class="ti ti-trash"></i>
+              </a>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="8" style="text-align:center;padding:40px;color:var(--text-3)">
+            <i class="ti ti-box" style="font-size:32px;display:block;margin-bottom:8px"></i>
+            No products found.
+            <a href="{% url 'inventory:product_create' %}">Add one now</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Pagination -->
+{% if products.has_other_pages %}
+<div style="display:flex;justify-content:center;gap:6px;margin-top:20px">
+  {% if products.has_previous %}
+    <a href="?page={{ products.previous_page_number }}&q={{ request.GET.q }}&category={{ request.GET.category }}&stock={{ request.GET.stock }}" class="btn btn-sm">
+      <i class="ti ti-chevron-left"></i>
+    </a>
+  {% endif %}
+  {% for num in products.paginator.page_range %}
+    <a href="?page={{ num }}&q={{ request.GET.q }}&category={{ request.GET.category }}&stock={{ request.GET.stock }}"
+       class="btn btn-sm {% if products.number == num %}btn-primary{% endif %}">
+      {{ num }}
+    </a>
+  {% endfor %}
+  {% if products.has_next %}
+    <a href="?page={{ products.next_page_number }}&q={{ request.GET.q }}&category={{ request.GET.category }}&stock={{ request.GET.stock }}" class="btn btn-sm">
+      <i class="ti ti-chevron-right"></i>
+    </a>
+  {% endif %}
+</div>
+{% endif %}
+
+{% endblock %}
